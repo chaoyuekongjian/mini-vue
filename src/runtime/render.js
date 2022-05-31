@@ -75,15 +75,8 @@ function processText(prevVnode, vnode, container, anchor) {
 }
 
 function processFragment(prevVnode, vnode, container, anchor) {
-  const fragmentStartAnchor = document.createTextNode('')
-  const fragmentEndAnchor = document.createTextNode('')
-  if (!prevVnode) {
-    vnode.el = fragmentStartAnchor
-    vnode.anchor = fragmentEndAnchor
-  } else {
-    vnode.el = prevVnode.el
-    vnode.anchor = prevVnode.anchor
-  }
+  const fragmentStartAnchor = (vnode.el = prevVnode ? prevVnode.el : document.createTextNode(''))
+  const fragmentEndAnchor = (vnode.anchor = prevVnode ? prevVnode.anchor : document.createTextNode(''))
   // todo
   if (prevVnode) {
     patchChildren(prevVnode, vnode, container, fragmentEndAnchor)

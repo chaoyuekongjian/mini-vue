@@ -25,16 +25,21 @@ function patchDomProps(prev, next, key, el) {
       el.className = next || ''
       break
     case 'style':
-      for(const styleName in next) {
-        el.style[styleName] = next[styleName]
-      }
-      if (prev) {
-        for(const styleName in prev) {
-          if (next[styleName] === null) {
-            el.style[styleName] = null
+      if (next == null) {
+        el.removeAttribute('style')
+      } else {
+        for(const styleName in next) {
+          el.style[styleName] = next[styleName]
+        }
+        if (prev) {
+          for(const styleName in prev) {
+            if (next[styleName] === null) {
+              el.style[styleName] = null
+            }
           }
         }
       }
+      
       break
     default:
       // /^on[^a-z]/

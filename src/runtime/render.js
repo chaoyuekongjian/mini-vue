@@ -9,26 +9,26 @@ export function render(vnode, container) {
       unmount(prevVnode)
     }
   } else {
-    console.log(vnode)
     patch(prevVnode, vnode, container)
   }
   container._vnode = vnode
 }
 
-function patch(prevVnode, vnode, container) {
+function patch(prevVnode, vnode, container, anchor) {
   if (prevVnode && !isSameVnode(prevVnode, vnode)) {
+    anchor = (prevVnode.anchor || prevVnode.el).nextSibling
     unmount(prevVnode)
     prevVnode = null
   }
   const { shapeFlags } = vnode
   if (shapeFlags & ShapeFlags.COMPONENT) {
-    processComponent(prevVnode, vnode, container)
+    processComponent(prevVnode, vnode, container, anchor)
   } else if (shapeFlags & ShapeFlags.Text) {
-    processText(prevVnode, vnode, container)
+    processText(prevVnode, vnode, container, anchor)
   } else if (shapeFlags & ShapeFlags.FRAGMENT) {
-    processFragment(prevVnode, vnode, container)
+    processFragment(prevVnode, vnode, container, anchor)
   } else {
-    processElement(prevVnode, vnode, container)
+    processElement(prevVnode, vnode, container, anchor)
   }
 }
 
@@ -48,39 +48,58 @@ function patchComponent(vnode) {
   // todo
 }
 
-function processComponent(prevVnode, vnode, container) {
+function processComponent(prevVnode, vnode, container, anchor) {
   // todo
 }
 
 function unmountFragment(vnode) {
   // todo
+  const { el: cur, anchor: end } = vnode
+  const { parentNode } = cur
+  while (cur !== end) {
+    let next = cur.nextSibling
+    parentNode.removeChild(cur)
+    cur = next
+  }
+  parentNode.removeChild(end)
 }
 
-function processText(prevVnode, vnode, container) {
+function processText(prevVnode, vnode, container, anchor) {
   // todo
   if (prevVnode) {
     vnode.el = prevVnode.el
     prevVnode.el.textContent = vnode.children
   } else {
-    mountTextNode(vnode, container)
+    mountTextNode(vnode, container, anchor)
   }
 }
 
-function processFragment(prevVnode, vnode, container) {
+function processFragment(prevVnode, vnode, container, anchor) {
+  const fragmentStartAnchor = document.createTextNode('')
+  const fragmentEndAnchor = document.createTextNode('')
+  if (!prevVnode) {
+    vnode.el = fragmentStartAnchor
+    vnode.anchor = fragmentEndAnchor
+  } else {
+    vnode.el = prevVnode.el
+    vnode.anchor = prevVnode.anchor
+  }
   // todo
   if (prevVnode) {
-    patchChildren(prevVnode, vnode, container)
+    patchChildren(prevVnode, vnode, container, fragmentEndAnchor)
   } else {
-    mountChildren(vnode.children, container)
+    container.insertBefore(fragmentStartAnchor, anchor)
+    container.insertBefore(fragmentEndAnchor, anchor)
+    mountChildren(vnode.children, container, fragmentEndAnchor)
   }
 }
 
-function processElement(prevVnode, vnode, container) {
+function processElement(prevVnode, vnode, container, anchor) {
   // todo
   if (prevVnode) {
     patchElement(prevVnode, vnode)
   } else {
-    mountElement(vnode, container)
+    mountElement(vnode, container, anchor)
   }
 }
 
@@ -89,31 +108,38 @@ function isSameVnode(n1, n2) {
 }
 
 // 挂载文本节点
-export function mountTextNode(vnode, container) {
+export function mountTextNode(vnode, container, anchor) {
   const textNode = document.createTextNode(vnode.children)
-  container.appendChild(textNode)
+  // container.appendChild(textNode)
+  container.insertBefore(textNode, anchor)
   vnode.el = textNode
 }
 
-export function mountElement(vnode, container) {
+export function mountElement(vnode, container, anchor) {
   const { type, props, shapeFlags, children } = vnode
   const el = document.createElement(type)
   // mountProps(props, el)
-  patchProps(null, props, el)
 
   if (shapeFlags & ShapeFlags.TEXT_CHILDREN) {
     mountTextNode(vnode, el)
   } else if (shapeFlags && shapeFlags & ShapeFlags.ARRAY_CHILDREN) {
     mountChildren(children, el)
   }
-  container.appendChild(el)
+
+  if (props) {
+    patchProps(null, props, el)
+  }
+
+  // container.appendChild(el)
+  // console.log(container, el, anchor)
+  container.insertBefore(el, anchor)
   vnode.el = el
 }
 
-export function mountChildren(children, container) {
+export function mountChildren(children, container, anchor) {
   children.forEach(child => {
     // mount(child, container)
-    patchChildren(null, child, container)
+    patch(null, child, container, anchor)
   })
 }
 
@@ -123,7 +149,7 @@ function patchElement(prevVnode, vnode) {
   patchChildren(prevVnode, vnode, vnode.el)
 }
 
-function patchChildren(prevVnode, vnode, container) {
+function patchChildren(prevVnode, vnode, container, anchor) {
   prevVnode = prevVnode || {}
   vnode = vnode || {}
   const { shapeFlags: prevShapeFlags, children: prevChildren } = prevVnode
@@ -138,12 +164,12 @@ function patchChildren(prevVnode, vnode, container) {
   } else if (shapeFlags & ShapeFlags.ARRAY_CHILDREN) {
     if (prevShapeFlags & ShapeFlags.TEXT_CHILDREN) {
       container.textContent = ''
-      mountChildren(vnode.children, container)
+      mountChildren(vnode.children, container, anchor)
     } else if (prevShapeFlags & ShapeFlags.ARRAY_CHILDREN) {
       // patchArrayChildren
-      patchArrayChildren(prevChildren, children, container)
+      patchArrayChildren(prevChildren, children, container, anchor)
     } else {
-      mountChildren(vnode.children, container)
+      mountChildren(vnode.children, container, anchor)
     }
   } else {
     if (prevShapeFlags & ShapeFlags.TEXT_CHILDREN) {
@@ -161,16 +187,16 @@ function unmountChildren(children) {
     unmount(child)
   })
 }
-function patchArrayChildren(prevChildren, children, container) {
+function patchArrayChildren(prevChildren, children, container, anchor) {
   const prevLength = prevChildren.length
   const newLength = children.length
   const commonLength = Math.min(prevLength, newLength)
   for(let i = 0; i < commonLength; i++) {
-    patch(prevChildren[i], children[i], container)
+    patch(prevChildren[i], children[i], container, anchor)
   }
   if (prevLength > newLength) {
     unmountChildren(prechildChildren.slice(commonLength))
   } else if (prevLength < newLength) {
-    mountChildren(children.slice(commonLength))
+    mountChildren(children.slice(commonLength), container, anchor)
   }
 }

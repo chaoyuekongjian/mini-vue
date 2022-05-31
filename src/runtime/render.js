@@ -159,8 +159,13 @@ function patchChildren(prevVnode, vnode, container, anchor) {
       container.textContent = ''
       mountChildren(vnode.children, container, anchor)
     } else if (prevShapeFlags & ShapeFlags.ARRAY_CHILDREN) {
-      // patchArrayChildren
-      patchArrayChildren(prevChildren, children, container, anchor)
+      // 只要第一个元素有key，就当做全部都有key  偷懒简化操作  正常情况下需要检查是否全部都有key
+      if (prevChildren[0] && prevChildren[0].key != null
+        && children[0] && children[0].key != null) {
+          patchKeyedChildren(prevChildren, children, container, anchor)
+      } else {
+        patchUnkeyedChildren(prevChildren, children, container, anchor)
+      }
     } else {
       mountChildren(vnode.children, container, anchor)
     }
@@ -180,7 +185,7 @@ function unmountChildren(children) {
     unmount(child)
   })
 }
-function patchArrayChildren(prevChildren, children, container, anchor) {
+function patchUnkeyedChildren(prevChildren, children, container, anchor) {
   const prevLength = prevChildren.length
   const newLength = children.length
   const commonLength = Math.min(prevLength, newLength)
@@ -192,4 +197,132 @@ function patchArrayChildren(prevChildren, children, container, anchor) {
   } else if (prevLength < newLength) {
     mountChildren(children.slice(commonLength), container, anchor)
   }
+}
+
+// 核心diff算法
+function patchKeyedChildren2(prevChildren, children, container, anchor) {
+  let maxNewIndexSoFar = 0
+  const map = new Map()
+  c1.forEach((item, j) => map.set(item.key, { item, j }))
+  for(let i = 0; i < children.length; i++) {
+    const next = children[i]
+    let find = false
+    const curAnchor = i === 0 ? prevChildren[0].el : children[i - 1].el.nextSibling
+    if (map.has(next.key)) {
+      find = true
+      const { prev, j } = map.get(next.key)
+      patch(prev, next, container, anchor)
+      if (j < maxNewIndexSoFar) {
+        container.insertBefore(next.el, curAnchor)
+      } else {
+        maxNewIndexSoFar = j
+      }
+      map.delete(next.key)
+    } else {
+      patch(null, next, container, curAnchor)
+    }
+  }
+  map.forEach(({ prev }) => unmount(prev))
+}
+
+
+function patchKeyedChildren(prevChildren, children, container, anchor) {
+  let i = 0
+  let end1 = prevChildren.length - 1
+  let end2 = children.length - 1
+
+  // 从左至右依次比对
+  while(i <= end1 && i <= end2 && prevChildren[i].key === children[i].key) {
+    patch(prevChildren[i], children[i], container, anchor)
+    i++
+  }
+
+  // 从右至左依次比对
+  while(i <= end1 && i <= end2 && prevChildren[end1].key === children[end2].key) {
+    patch(prevChildren[end1], children[end2], container, anchor)
+    end1--
+    end2--
+  }
+
+  //
+  if (i > end1) {
+    // 经过 1、2 直接将旧结点比对完，则剩下的新结点直接 mount，此时 i > e1
+    for(let j = i; j <= end2; j++) {
+      const nextPos = end2 + 1
+      const curAnchor = (children[nextPos] && children[nextPos].el) || anchor
+      patch(null, children[j], container, curAnchor)
+    }
+  } else if (i > e2) {
+    // 经过 1、2 直接将旧结点比对完，则剩下的新结点直接 mount，此时 i > e1
+    for(let j = i; j <= end1; j++) {
+      unmount(prevChildren[j])
+    }
+  } else {
+    // 若不满足 3，采用传统 diff 算法，但不真的添加和移动，只做标记和删除
+    let maxNewIndexSoFar = 0
+    let move = false
+    const map = new Map()
+    const source = new Array(end2 - i + 1).fill(-1)
+    const toMounted = []
+    c1.forEach((item, j) => map.set(item.key, { item, j }))
+    for(let k = 0; k < children.length; k++) {
+      const next = children[k]
+      let find = false
+      // const curAnchor = i === 0 ? prevChildren[0].el : children[i - 1].el.nextSibling
+      if (map.has(next.key)) {
+        find = true
+        const { prev, j } = map.get(next.key)
+        patch(prev, next, container, anchor)
+        if (j < maxNewIndexSoFar) {
+          move = true
+          // container.insertBefore(next.el, curAnchor)
+        } else {
+          maxNewIndexSoFar = j
+        }
+        source[k] = j
+        map.delete(next.key)
+      } else {
+        // todo
+        toMounted.push(k + i)
+        // patch(null, next, container, curAnchor)
+      }
+    }
+    map.forEach(({ prev }) => unmount(prev))
+    if (move) {
+      // 需要移动，则采用新的最长上升子序列算法
+      const seq = getSequence(source)
+      let j = seq.length - 1
+      for(let k = source.length - 1; k >= 0; k--) {
+        if (source[k] === -1) {
+          // mount
+          const pos = k + i
+          const nextPos = pos + 1
+          const curAnchor = (children[nextPos] && children[nextPos].el) || anchor
+          patch(null, children[pos], container, curAnchor)
+        } else if (seq[j] === k) {
+          // 不用移动
+          j--
+        } else {
+          // 需要移动
+          const pos = k + i
+          const nextPos = pos + 1
+          const curAnchor = (children[nextPos] && children[nextPos].el) || anchor
+          container.insertBefore(children[pos].el, curAnchor)
+        }
+      }
+    } else if (toMounted.length > 0) {
+      for(let k = toMounted.length - 1; k >= 0; k--) {
+        const pos = toMounted[k]
+        const nextPos = pos + 1
+        const curAnchor = (children[nextPos] && children[nextPos].el) || anchor
+        patch(null, children[pos], container, curAnchor)
+      }
+    }
+  }
+
+}
+
+// 最长上升子序列
+function getSequence(arr) {
+
 }

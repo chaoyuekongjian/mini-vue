@@ -23,7 +23,7 @@ function patch(prevVnode, vnode, container, anchor) {
   const { shapeFlags } = vnode
   if (shapeFlags & ShapeFlags.COMPONENT) {
     processComponent(prevVnode, vnode, container, anchor)
-  } else if (shapeFlags & ShapeFlags.Text) {
+  } else if (shapeFlags & ShapeFlags.TEXT) {
     processText(prevVnode, vnode, container, anchor)
   } else if (shapeFlags & ShapeFlags.FRAGMENT) {
     processFragment(prevVnode, vnode, container, anchor)
@@ -193,7 +193,7 @@ function patchUnkeyedChildren(prevChildren, children, container, anchor) {
     patch(prevChildren[i], children[i], container, anchor)
   }
   if (prevLength > newLength) {
-    unmountChildren(prechildChildren.slice(commonLength))
+    unmountChildren(prevChildren.slice(commonLength))
   } else if (prevLength < newLength) {
     mountChildren(children.slice(commonLength), container, anchor)
   }
@@ -252,7 +252,7 @@ function patchKeyedChildren(prevChildren, children, container, anchor) {
       const curAnchor = (children[nextPos] && children[nextPos].el) || anchor
       patch(null, children[j], container, curAnchor)
     }
-  } else if (i > e2) {
+  } else if (i > end2) {
     // 经过 1、2 直接将旧结点比对完，则剩下的新结点直接 mount，此时 i > e1
     for(let j = i; j <= end1; j++) {
       unmount(prevChildren[j])
@@ -264,9 +264,13 @@ function patchKeyedChildren(prevChildren, children, container, anchor) {
     const map = new Map()
     const source = new Array(end2 - i + 1).fill(-1)
     const toMounted = []
-    c1.forEach((item, j) => map.set(item.key, { item, j }))
-    for(let k = 0; k < children.length; k++) {
-      const next = children[k]
+    for(let j = i; j < children.length; j++) {
+      const prev = children[j]
+      map.set(prev.key, { prev, j })
+    }
+    children.forEach((item, j) => map.set(item.key, { item, j }))
+    for(let k = 0; k < source.length; k++) {
+      const next = children[k + i]
       let find = false
       // const curAnchor = i === 0 ? prevChildren[0].el : children[i - 1].el.nextSibling
       if (map.has(next.key)) {

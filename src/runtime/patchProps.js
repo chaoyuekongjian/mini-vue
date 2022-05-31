@@ -5,6 +5,7 @@ export function patchProps(prevProps, props, el) {
   prevProps = prevProps || {}
   props = props || {}
   for(const key in props) {
+    if (key === 'key') continue
     const next = props[key]
     const prev = prevProps[key]
     if (prev !== next) {
@@ -12,7 +13,7 @@ export function patchProps(prevProps, props, el) {
     }
   }
   for(const key in prevProps) {
-    if (props[key] === null) {
+    if (key !== 'key' && props[key] == null) {
       patchDomProps(prevProps[key], null, key, el)
     }
   }
@@ -33,8 +34,8 @@ function patchDomProps(prev, next, key, el) {
         }
         if (prev) {
           for(const styleName in prev) {
-            if (next[styleName] === null) {
-              el.style[styleName] = null
+            if (next[styleName] == null) {
+              el.style[styleName] = ''
             }
           }
         }

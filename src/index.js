@@ -1,22 +1,8 @@
 import { render, h, Text, Fragment } from './runtime';
 
-render(
-  h('ul', null, [
-    h('li', null, 'first'),
-    h(Fragment, null, []),
-    h('li', null, 'last'),
-  ]),
-  document.body
-);
+const root = document.body
+render(h('div', { class: 'b'}), root);
+
 setTimeout(() => {
-  render(
-    h('ul', null, [
-      h('li', null, 'first'),
-      h(Fragment, null, [
-        h('li', null, 'middle'),
-      ]),
-      h('li', null, 'last'),
-    ]),
-    document.body
-  );
-}, 2000);
+  render(h('div'), root);
+}, 1000)

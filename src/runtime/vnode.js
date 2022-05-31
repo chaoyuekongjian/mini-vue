@@ -46,6 +46,7 @@ export function h(type, props, children) {
     children,
     shapeFlags,
     el: null,
-    anchor: null
+    anchor: null,
+    key: props && props.key
   }
 }

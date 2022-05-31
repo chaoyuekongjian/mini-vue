@@ -323,6 +323,41 @@ function patchKeyedChildren(prevChildren, children, container, anchor) {
 }
 
 // 最长上升子序列
-function getSequence(arr) {
-
+function getSequence(nums) {
+  let arr = [];
+  let position = [];
+  for (let i = 0; i < nums.length; i++) {
+    if (nums[i] === -1) {
+      continue;
+    }
+    // arr[arr.length - 1]可能为undefined，此时nums[i] > undefined为false
+    if (nums[i] > arr[arr.length - 1]) {
+      arr.push(nums[i]);
+      position.push(arr.length - 1);
+    } else {
+      let l = 0,
+        r = arr.length - 1;
+      while (l <= r) {
+        let mid = ~~((l + r) / 2);
+        if (nums[i] > arr[mid]) {
+          l = mid + 1;
+        } else if (nums[i] < arr[mid]) {
+          r = mid - 1;
+        } else {
+          l = mid;
+          break;
+        }
+      }
+      arr[l] = nums[i];
+      position.push(l);
+    }
+  }
+  let cur = arr.length - 1;
+  // 这里复用了arr，它本身已经没用了
+  for (let i = position.length - 1; i >= 0 && cur >= 0; i--) {
+    if (position[i] === cur) {
+      arr[cur--] = i;
+    }
+  }
+  return arr;
 }

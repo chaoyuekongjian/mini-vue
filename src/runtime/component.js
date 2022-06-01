@@ -2,6 +2,7 @@ import { reactive } from '../reactive/reactive'
 import { effect } from '../reactive/effect'
 import { normalizeVnode } from '../runtime/vnode'
 import { patch } from '../runtime/render'
+import { queueJob } from './scheduler'
 
 export function mountComponent(vnode, container, anchor) {
   const { type: Component } = vnode
@@ -48,6 +49,8 @@ export function mountComponent(vnode, container, anchor) {
     if (!instance.isMounted) {
       instance.isMounted = true
     }
+  }, {
+    scheduler: queueJob
   })
 }
 

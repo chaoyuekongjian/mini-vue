@@ -1,25 +1,32 @@
 import { render, h, Text, Fragment } from './runtime';
-import { reactive } from './reactive/reactive'
+import { ref } from './reactive'
 
 const root = document.body
-const Child = {
-  props: ['foo'],
-  render(ctx) {
-    return h('div', { class: 'a', id: ctx.bar }, ctx.foo);
-  },
-};
-
-const Parent = {
+const comp = {
   setup() {
-    const vnodeProps = reactive({
-      foo: 'foo',
-      bar: 'bar',
-    });
-    return { vnodeProps };
+    const count = ref(0)
+    const add = () => {
+      count.value++
+      count.value++
+      count.value++
+      count.value++
+      count.value++
+      count.value++
+    }
+    return {
+      count,
+      add
+    }
   },
   render(ctx) {
-    return h(Child, ctx.vnodeProps);
-  },
-};
+    console.log('render')
+    return [
+      h('div', null, ctx.count.value),
+      h('button', {
+        onClick: ctx.add
+      }, 'add')
+    ]
+  }
+}
 
-render(h(Parent), root);
+render(h(comp), root);

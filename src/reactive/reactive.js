@@ -40,7 +40,7 @@ export function reactive(target) {
   return proxy
 }
 
-export function isReactive(target) {
+function isReactive(target) {
   return !!(target && target.__isReactive)
 }
 

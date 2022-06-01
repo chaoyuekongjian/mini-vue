@@ -14,7 +14,7 @@ export function isRef(value) {
   return !!(value && value.__isRef)
 }
 
-class RefImpl {
+class RefImpl { 
   constructor(value) {
     this.__isRef = true
     this._value = convert(value)
@@ -33,6 +33,6 @@ class RefImpl {
   }
 }
 
-export function convert(value) {
-  return isObject(value) reactive(value) : value
+function convert(value) {
+  return isObject(value) ? reactive(value) : value
 }

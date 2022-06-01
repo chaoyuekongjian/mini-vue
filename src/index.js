@@ -1,4 +1,4 @@
-import { render, h, Text, Fragment } from './runtime';
+import { render, h, Text, Fragment, createApp } from './runtime';
 import { ref } from './reactive'
 
 const root = document.body
@@ -29,4 +29,4 @@ const comp = {
   }
 }
 
-render(h(comp), root);
+createApp(comp).mount(root)

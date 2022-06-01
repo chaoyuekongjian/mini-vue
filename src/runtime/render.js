@@ -1,6 +1,7 @@
 import { isBoolean } from "../utils";
 import { ShapeFlags } from "./vnode";
 import { patchProps } from "./patchProps"
+import { mountComponent } from "./component";
 
 export function render(vnode, container) {
   const prevVnode = container._vnode
@@ -14,7 +15,7 @@ export function render(vnode, container) {
   container._vnode = vnode
 }
 
-function patch(prevVnode, vnode, container, anchor) {
+export function patch(prevVnode, vnode, container, anchor) {
   if (prevVnode && !isSameVnode(prevVnode, vnode)) {
     anchor = (prevVnode.anchor || prevVnode.el).nextSibling
     unmount(prevVnode)
@@ -44,12 +45,27 @@ function unmount(vnode) {
   }
 }
 
+function unmountComponent(vnode) {
+  unmount(vnode.Component.subTree)
+}
+
 function patchComponent(vnode) {
   // todo
 }
 
 function processComponent(prevVnode, vnode, container, anchor) {
-  // todo
+  if (prevVnode) {
+    // shouldComponentUpdate
+    updateComponent(prevVnode, vnode)
+  } else {
+    mountComponent(vnode, container, anchor)
+  }
+}
+
+function updateComponent(prevVnode, vnode) {
+  vnode.Component = prevVnode.Component
+  vnode.Component.next = vnode
+  vnode.Component.update()
 }
 
 function unmountFragment(vnode) {

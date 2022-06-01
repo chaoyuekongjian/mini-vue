@@ -1,4 +1,4 @@
-import { isArray, isNumber, isString } from "../utils"
+import { isArray, isNumber, isObject, isString } from "../utils"
 
 // 使用位运算
 export const ShapeFlags = {
@@ -47,6 +47,18 @@ export function h(type, props, children) {
     shapeFlags,
     el: null,
     anchor: null,
-    key: props && props.key
+    key: props && props.key,
+    Component: null, // 专门用于存储组件的实例
   }
+}
+
+export function normalizeVnode(result) {
+  if (isArray(result)) {
+    return h(Fragment, null, result)
+  }
+  if (isObject(result)) {
+    return result
+  }
+  // string number
+  return h(Text, null, result.toString())
 }

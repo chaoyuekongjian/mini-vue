@@ -44,12 +44,12 @@ function parseChildren(context) {
       // 区分文本节点是否全是空白
       if (/[^\t\r\n\f ]/.test(node.content)) {
         // 文本节点有一些字符
-        node.content = node.content.replace(/[^\t\r\n\f ]+/g, ' ')
+        node.content = node.content.replace(/[\t\r\n\f ]+/g, ' ')
       } else {
         // 文本节点全是空白
         const prev = nodes[i - 1]
         const next = nodes[i + 1]
-        if (!prev || !next || prev.type === NodeTypes.ELEMENT && next.type === NodeTypes.ELEMENT && /[\r\n]+/.text(node.content)) {
+        if (!prev || !next || prev.type === NodeTypes.ELEMENT && next.type === NodeTypes.ELEMENT && /[\r\n]+/.test(node.content)) {
           // 删除空白节点
           removed = true
           nodes[i] = null
@@ -60,7 +60,7 @@ function parseChildren(context) {
     }
   }
 
-  return removed ? nodes.filter(boolean) : nodes
+  return removed ? nodes.filter(Boolean) : nodes
 }
 
 function isEnd(context) {

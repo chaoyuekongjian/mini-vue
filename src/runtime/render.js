@@ -70,7 +70,7 @@ function updateComponent(prevVnode, vnode) {
 
 function unmountFragment(vnode) {
   // todo
-  const { el: cur, anchor: end } = vnode
+  let { el: cur, anchor: end } = vnode
   const { parentNode } = cur
   while (cur !== end) {
     let next = cur.nextSibling

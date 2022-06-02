@@ -1,5 +1,5 @@
 export function isObject(target) {
-  return typeof target === 'object' && target !== null
+  return typeof target === 'object' && target != null
 }
 
 export function hasChanged(oldValue, value) {
@@ -11,7 +11,7 @@ export function isArray(target) {
 }
 
 export function isFunction(target) {
-  return typeof target === 'function' && target !== null
+  return typeof target === 'function' && target != null
 }
 
 export function isString(target) {
@@ -26,3 +26,6 @@ export function isBoolean(target) {
   return typeof target === 'boolean'
 }
 
+export function camelize(value) {
+  return value.replace(/-(\w)/g, (_, c) => c ? c.toUpperCase() : '')
+}

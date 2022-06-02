@@ -4,7 +4,7 @@ import { effect, track, trigger } from './effect'
 export function computed(getterOrOpt) {
   let getter, setter
   if (isFunction(getterOrOpt)) {
-    getter = isFunction
+    getter = getterOrOpt
     setter = () => {
       console.warn('computed is readyonly')
     }

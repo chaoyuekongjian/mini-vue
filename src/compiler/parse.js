@@ -42,7 +42,7 @@ function parseChildren(context) {
     const node = nodes[i]
     if (node.type === NodeTypes.TEXT) {
       // 区分文本节点是否全是空白
-      if (/[^\t\r\n\f ]/.text(node.content)) {
+      if (/[^\t\r\n\f ]/.test(node.content)) {
         // 文本节点有一些字符
         node.content = node.content.replace(/[^\t\r\n\f ]+/g, ' ')
       } else {
@@ -80,7 +80,7 @@ function parseInterpolation(context) {
     type: NodeTypes.INTERPOLATION,
     content: {
       type: NodeTypes.SIMPLE_EXPRESSION,
-      content: string,
+      content,
       isStatic: false,
     } // 表达式节点
   }
@@ -101,7 +101,6 @@ function parseElement(context) {
 const tagReg = /^<\/?([a-z][^\t\r\n\f />]*)/i
 function parseTag(context) {
   const match = tagReg.exec(context.source)
-  console.log(match)
   const tag = match[1] // 不严谨 match可能为null  这里不做容错处理   这里默认认为正确的模板字符串
 
   advanceBy(context, match[0].length)
@@ -199,7 +198,7 @@ function parseAttribute(context) {
 function parseAttributeValue(context) {
   let quote = context.source[0]
   advanceBy(context, 1)
-  const endIndex = context.source.indexOf(queue)
+  const endIndex = context.source.indexOf(quote)
   const content = parseTextData(context, endIndex)
   advanceBy(context, 1)
   advanceSpaces(context)
@@ -208,7 +207,7 @@ function parseAttributeValue(context) {
 
 function parseTextData(context, length) {
   const text = context.source.slice(0, length)
-  advanceBy(text, length)
+  advanceBy(context, length)
   return text
 }
 
@@ -238,7 +237,7 @@ function advanceBy(context, numOfCharacters) {
 }
 
 // 吃掉空格
-const reg = /[^\t\r\n\f ]+/ // 去掉空格的正则
+const reg = /^[\t\r\n\f ]+/ // 去掉空格的正则
 function advanceSpaces(context) {
   const match = reg.exec(context.source)
   if (match) {

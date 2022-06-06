@@ -5,7 +5,7 @@ import { patch } from '../runtime/render'
 import { queueJob } from './scheduler'
 
 export function mountComponent(vnode, container, anchor) {
-  const { type: Component } = vnode
+  const { type: originalComp } = vnode
 
   // createComponentIntance
   const instance = vnode.Component = {
@@ -22,7 +22,7 @@ export function mountComponent(vnode, container, anchor) {
 
   initProps(instance, vnode)
   // 源码：instance.setupState = proxyRefs(setupResult)
-  instance.setupState = Component.setup?.(instance.props, { attrs: instance.attrs })
+  instance.setupState = originalComp.setup?.(instance.props, { attrs: instance.attrs })
 
   // vue源码此处使用proxy代码实现
   instance.ctx = {
@@ -31,23 +31,44 @@ export function mountComponent(vnode, container, anchor) {
   }
 
   instance.update = effect(() => {
-    if (instance.next && instance.isMounted) {
-      // 被动更新
-      vnode = instance.next
-      instance.next = null
-      initProps(instance, vnode)
-      instance.ctx = {
-        ...instance.props,
-        ...instance.setupState
-      }
-    }
-    const prev = instance.subTree
-    const subTree = instance.subTree = normalizeVnode(Component.render(instance.ctx))
-    fallThrough(instance, subTree)
-    patch(instance.isMounted ? prev : null, subTree, container, anchor)
-    vnode.el = subTree.el
     if (!instance.isMounted) {
-      instance.isMounted = true
+      // mount
+      const subTree = instance.subTree = normalizeVnode(originalComp.render(instance.ctx));
+      if (Object.keys(instance.attrs)) {
+        subTree.props = {
+          ...subTree.props,
+          ...instance.attrs
+        };
+      }
+      patch(null, subTree, container, anchor);
+      instance.isMounted = true;
+      vnode.el = subTree.el;
+    } else {
+      // update
+
+      // instance.next存在，代表是被动更新。否则是主动更新
+      if (instance.next) {
+        vnode = instance.next;
+        instance.next = null;
+        instance.props = reactive(instance.props);
+        initProps(instance, vnode);
+        instance.ctx = {
+          ...instance.props,
+          ...instance.setupState
+        };
+      }
+
+      const prev = instance.subTree;
+      const subTree = instance.subTree = normalizeVnode(originalComp.render(instance.ctx));
+      if (Object.keys(instance.attrs)) {
+        subTree.props = {
+          ...subTree.props,
+          ...instance.attrs
+        };
+      }
+      // anchor may have changed if it's in a fragment
+      patch(prev, subTree, container, anchor);
+      vnode.el = subTree.el;
     }
   }, {
     scheduler: queueJob

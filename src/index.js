@@ -1,5 +1,30 @@
-// import { render, h, Text, Fragment, createApp, nextTick } from './runtime';
-// import { ref, reactive } from './reactive'
-import { parse } from './compiler'
+import { compile } from './compiler/compile';
+import {
+  createApp,
+  render,
+  h,
+  Text,
+  Fragment,
+  // renderList,
+  // resolveComponent,
+  // withModel,
+  nextTick,
+} from './runtime';
+import { reactive, ref, computed, effect } from './reactive';
 
-console.log(parse('<div class="a" v-if="ok">hello {{name}}</div>'))
+export const MiniVue = (window.MiniVue = {
+  createApp,
+  render,
+  h,
+  Text,
+  Fragment,
+  // renderList,
+  // resolveComponent,
+  // withModel,
+  nextTick,
+  reactive,
+  ref,
+  computed,
+  effect,
+  compile,
+});

@@ -5,7 +5,7 @@ export function generate(ast) {
   const returns = traverseNode(ast)
   const code = `
   with(ctx) {
-    const { h, Text, Fragment } = MiniVue;
+    const { h, Text, Fragment, renderList } = MiniVue;
     return ${returns}
   }
   `
@@ -20,7 +20,7 @@ function traverseNode(node) {
       }
       return traverseChildren(node)
     case NodeTypes.ELEMENT:
-      return createInterElementVNode(node)
+      return resolveElementASTNode(node)
     case NodeTypes.INTERPOLATION:
       return createInterPolationVNode(node)
     case NodeTypes.TEXT:
@@ -40,7 +40,21 @@ function createText({ isStatic = true, content = '' } = {}) {
   return isStatic ? JSON.stringify(content) : content
 }
 
-function createInterElementVNode(node) {
+// 专门处理特殊指令
+function resolveElementASTNode(node) {
+  // v-for
+  const forNode = pluck(node.directives, 'for')
+  // for
+  if (forNode) {
+    // (item, index) in items 
+    const { exp } = forNode
+    const [args, source] = exp.content.split(/\sin\s|\sof\s/)
+    return `h(Fragment, null, renderList(${source.trim()}, ${args.trim()} => ${createElementVNode(node)}))`
+  }
+  return createElementVNode(node)
+}
+
+function createElementVNode(node) {
   const { children } = node
   const tag = JSON.stringify(node.tag)
 
@@ -101,4 +115,13 @@ function traverseChildren(node) {
     results.push(traverseNode(children[i]))
   }
   return `[${results.join(', ')}]`
+}
+
+function pluck(directives, name, remove = true) {
+  const index = directives.findIndex(dir => dir.name === name)
+  const dir = directives[index]
+  if (index > -1 && remove) {
+    directives.splice(index, 1)
+  }
+  return dir
 }

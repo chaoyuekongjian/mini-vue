@@ -5,7 +5,7 @@ export function generate(ast) {
   const returns = traverseNode(ast)
   const code = `
   with(ctx) {
-    const { h, Text, Fragment, renderList } = MiniVue;
+    const { h, Text, Fragment, renderList, withModel, resolveComponent } = MiniVue;
     return ${returns}
   }
   `

@@ -6,7 +6,7 @@ import { queueJob } from './scheduler'
 import { compile } from '../compiler'
 
 export function mountComponent(vnode, container, anchor) {
-  const { type: originalComp } = vnode
+  const originalComp = vnode.type || {}
 
   // createComponentIntance
   const instance = vnode.Component = {
@@ -32,7 +32,7 @@ export function mountComponent(vnode, container, anchor) {
   }
   
   if (!originalComp.render && originalComp.template) {
-    const template = originalComp.template
+    let template = originalComp.template
     if (template[0] === '#') {
       const el = document.querySelector(template)
       template = el ? el.innerHTML : ''

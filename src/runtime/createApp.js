@@ -25,6 +25,7 @@ export function resolveComponent(name) {
     components &&
     (components[name] ||
       components[camelize(name)] ||
-      components[capitalize(name)])
+      components[capitalize(name)] ||
+      components[capitalize(camelize(name))])
   )
 }

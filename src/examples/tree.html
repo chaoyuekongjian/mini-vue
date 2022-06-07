@@ -4,7 +4,7 @@
 <script type="text/x-template" id="item-template">
     <li>
     <div
-      :class="{bold: isFolder.value}"
+      :class="isFolder.value ? 'bold' : ''"
       @click="toggle"
       @dblclick="changeType">
       {{model.name}}

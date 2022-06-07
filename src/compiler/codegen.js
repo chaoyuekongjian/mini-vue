@@ -12,15 +12,15 @@ export function generate(ast) {
   return code
 }
 
-function traverseNode(node) {
+function traverseNode(node, parent) {
   switch (node.type) {
     case NodeTypes.ROOT:
       if (node.children.length === 1) {
-        return traverseNode(node.children[0])
+        return traverseNode(node.children[0], node)
       }
       return traverseChildren(node)
     case NodeTypes.ELEMENT:
-      return resolveElementASTNode(node)
+      return resolveElementASTNode(node, parent)
     case NodeTypes.INTERPOLATION:
       return createInterPolationVNode(node)
     case NodeTypes.TEXT:
@@ -41,7 +41,35 @@ function createText({ isStatic = true, content = '' } = {}) {
 }
 
 // 专门处理特殊指令
-function resolveElementASTNode(node) {
+function resolveElementASTNode(node, parent) {
+  const ifNode = pluck(node.directives, 'if') || pluck(node.directives, 'else-if')
+  if (ifNode) {
+    let consequent = resolveElementASTNode(node, parent)
+    let alternate
+
+    const { children } = parent
+    let i = children.findIndex(child => child === node) + 1
+    for(;i < children.length; i++) {
+      const sibling = children[i]
+      if (sibling.type === NodeTypes.TEXT && !sibling.content.trim()) {
+        children.splice(i, 1)
+        i--
+        continue
+      }
+      if (sibling.type === NodeTypes.ELEMENT) {
+        if (pluck(sibling.directives, 'else')
+         || pluck(sibling.directives, 'else-if', false)) {
+          alternate = resolveElementASTNode(sibling, parent)
+          children.splice(i, 1)
+        }
+      }
+      break
+    }
+
+    const { exp } = ifNode
+    let condition = exp.content
+    return `${condition} ? ${consequent} : ${alternate || createTextVNode()}`
+  }
   // v-for
   const forNode = pluck(node.directives, 'for')
   // for
@@ -49,14 +77,44 @@ function resolveElementASTNode(node) {
     // (item, index) in items 
     const { exp } = forNode
     const [args, source] = exp.content.split(/\sin\s|\sof\s/)
-    return `h(Fragment, null, renderList(${source.trim()}, ${args.trim()} => ${createElementVNode(node)}))`
+    return `h(Fragment, null, renderList(${source.trim()}, ${args.trim()} => ${resolveElementASTNode(node, parent)}))`
   }
   return createElementVNode(node)
 }
 
 function createElementVNode(node) {
-  const { children } = node
-  const tag = JSON.stringify(node.tag)
+  const { children, tagType } = node
+  const tag = tagType === NodeTypes.ELEMENT ? `"${node.tag}"` : `resolveComponent("${node.tag}")`
+
+  const vModel = pluck(node.directives, 'model')
+  if (vModel) {
+    node.directives.push(
+      {
+        type: NodeTypes.DIRECTIVE,
+        name: 'bind',
+        exp: vModel.exp, // 表达式节点
+        arg: {
+          type: NodeTypes.SIMPLE_EXPRESSION,
+          content: 'value',
+          isStatic: true,
+        }, // 表达式节点
+      },
+      {
+        type: NodeTypes.DIRECTIVE,
+        name: 'on',
+        exp: {
+          type: NodeTypes.SIMPLE_EXPRESSION,
+          content: `($event) => ${vModel.exp.content} = $event.target.value`,
+          isStatic: false,
+        }, // 表达式节点
+        arg: {
+          type: NodeTypes.SIMPLE_EXPRESSION,
+          content: 'input',
+          isStatic: true,
+        }, // 表达式节点
+      }
+    )
+  }
 
   const propsArr = createPropsArr(node)
   const propsStr = propsArr.length ? `{ ${propsArr.join(', ')} }` : 'null'
@@ -112,7 +170,7 @@ function traverseChildren(node) {
   }
   const results = []
   for (let i = 0; i < children.length; i++) {
-    results.push(traverseNode(children[i]))
+    results.push(traverseNode(children[i], node))
   }
   return `[${results.join(', ')}]`
 }

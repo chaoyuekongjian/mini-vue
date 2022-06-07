@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="../../dist/mini-vue.js"></script>
+</head>
+<body>
+  <div id="app">
+    Counter
+    <div>{{ count.value }}</div>
+    <button @click="add">click</button>
+    <div v-for="(item, index) in items" :key="item.name">{{index}}:{{item.name}}</div>
+  </div>
+  <script>
+    const { createApp, ref, reactive } = MiniVue
+    createApp({
+      setup() {
+        const items = reactive([
+          { name: 'foo' },
+          { name: 'bar' }
+        ])
+        const count = ref(0)
+        const add = () => count.value++
+        return {
+          count,
+          add,
+          items
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>

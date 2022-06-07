@@ -3,6 +3,7 @@ import { effect } from '../reactive/effect'
 import { normalizeVnode } from '../runtime/vnode'
 import { patch } from '../runtime/render'
 import { queueJob } from './scheduler'
+import { compile } from '../compiler'
 
 export function mountComponent(vnode, container, anchor) {
   const { type: originalComp } = vnode
@@ -28,6 +29,16 @@ export function mountComponent(vnode, container, anchor) {
   instance.ctx = {
     ...instance.props,
     ...instance.setupState
+  }
+  
+  if (!originalComp.render && originalComp.template) {
+    const template = originalComp.template
+    if (template[0] === '#') {
+      const el = document.querySelector(template)
+      template = el ? el.innerHTML : ''
+    }
+    const code = compile(template)
+    originalComp.render = new Function('ctx', code)
   }
 
   instance.update = effect(() => {

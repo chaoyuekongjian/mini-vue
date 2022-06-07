@@ -27,6 +27,7 @@ export function reactive(target) {
       const oldValue = target[key]
       const res = Reflect.set(target, key, value, receiver)
       if (hasChanged(oldValue, value)) {
+        console.log(target, key)
         trigger(target, key)
         if (isArray(target) && hasChanged(oldLength, target.length)) { // 如果target为数组
           trigger(target, 'length')

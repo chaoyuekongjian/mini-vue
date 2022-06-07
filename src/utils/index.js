@@ -29,3 +29,7 @@ export function isBoolean(target) {
 export function camelize(value) {
   return value.replace(/-(\w)/g, (_, c) => c ? c.toUpperCase() : '')
 }
+
+export function capitalize(value) {
+  return value[0].toUpperCase() + value.slice(1)
+}
